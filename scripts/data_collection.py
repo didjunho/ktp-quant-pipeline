@@ -4,25 +4,37 @@ import requests
 import psycopg2
 from dotenv import load_dotenv
 import os
+import schedule
+import datetime
 
 class APIFailureException(Exception):
     pass
 
 
-def get_data(company_string):
+def get_data(company_list):
+   
     API_KEY = os.getenv("API_KEY")
+    API_KEY2 = os.getenv("API_KEY2")
+    last_used = API_KEY2
+    responses = []
+    for c in company_list:
+        if(last_used == API_KEY):
+            current_key = API_KEY2
+        else:
+            current_key = API_KEY
 
-    get_request = "https://www.alphavantage.co/query?" \
-                  "function=BATCH_STOCK_QUOTES&apikey={0}&symbols={1}"
+        get_request = "https://www.alphavantage.co/query?" \
+                  "function=BATCH_STOCK_QUOTES&apikey={0}&symbol={1}"
+        response = requests.get(get_request.format(current_key, c))
 
-    response = requests.get(get_request.format(API_KEY, company_string))
+        last_used = current_key
 
-    if response.status_code != 200:
-        raise APIFailureException("Something went wrong")
+        if response.status_code != 200:
+            raise APIFailureException("Something went wrong")
 
-    print(response.json())
-
-    return response.json()
+         print(response.json())
+         responses.append(response.json())
+    return responses
 
 
 def write_to_db(data): 
@@ -47,11 +59,13 @@ def write_to_db(data):
         conn.cursor().execute(query)
         conn.commit()
 
-def lambda_handler(event, context):
+def handler():
     try:
-        load_dotenv()
-        data = get_data("GOOG,AAP")
-        write_to_db(data)
+        #load_dotenv()
+        companies = []
+        if datetime.datetime.now().isoweekday(1, 6):
+            data = get_data(companies)
+            write_to_db(data)
     except:
         return {
         'statusCode': 500,
@@ -62,11 +76,14 @@ def lambda_handler(event, context):
         'statusCode': 200,
         'body': json.dumps('Hello from Lambda!')
     }
+weekayday() in range ()1, 6):   
+
 
 
 if __name__ == "__main__":
     load_dotenv()
-    data = get_data("GOOG,AAP")
-    write_to_db(data)
-
-
+    schedule.every().day.at("9:00").do(handler)
+    if(t)
+    while True:
+        schedule.run_pending()
+        time.sleep(1)
