@@ -5,36 +5,30 @@ import psycopg2
 from dotenv import load_dotenv
 import os
 import schedule
-import datetime
-
+from datetime import datetime
 class APIFailureException(Exception):
     pass
 
 
 def get_data(company_list):
-   
-    API_KEY = os.getenv("API_KEY")
-    API_KEY2 = os.getenv("API_KEY2")
-    last_used = API_KEY2
+   # for c inc 
+    #API_KEY = os.getenv("API_KEY")
+    API_KEY = "pk_4418eb83aa1444959a82a1303e9ce418"
+    current = -1
     responses = []
-    for c in company_list:
-        if(last_used == API_KEY):
-            current_key = API_KEY2
-        else:
-            current_key = API_KEY
+    #for c in company_list:
+        #current = (current + 1) % len(API_KEYS)
 
-        get_request = "https://www.alphavantage.co/query?" \
-                  "function=BATCH_STOCK_QUOTES&apikey={0}&symbol={1}"
-        response = requests.get(get_request.format(current_key, c))
+    get_request = "https://cloud.iexapis.com/v1/stock/market/batch/latestprice?symbols={0}&types=quote,chart&token={1}"
+    response = requests.get(get_request.format(API_KEY, c))
 
-        last_used = current_key
+    if response.status_code != 200:
+        raise APIFailureException("Something went wrong")
 
-        if response.status_code != 200:
-            raise APIFailureException("Something went wrong")
+    print(response.json())
+    #responses.append(response.json())
+    return response
 
-         print(response.json())
-         responses.append(response.json())
-    return responses
 
 
 def write_to_db(data): 
@@ -52,9 +46,9 @@ def write_to_db(data):
 
     stocks = data['Stock Quotes']
     for stock in stocks: 
-        ticker = stock['1. symbol']
-        price = float(stock['2. price'])
-        timestamp = stock['4. timestamp']
+        ticker = stock['symbol']
+        price = float(stock['latestPrice '])
+        timestamp = stock['latestUpdate']
         query = """INSERT INTO stocks (ticker, price, timestamp) VALUES (\'{0}\', \'{1}\', \'{2}\')""".format(ticker, price, timestamp)
         conn.cursor().execute(query)
         conn.commit()
@@ -62,10 +56,10 @@ def write_to_db(data):
 def handler():
     try:
         #load_dotenv()
-        companies = []
-        if datetime.datetime.now().isoweekday(1, 6):
-            data = get_data(companies)
-            write_to_db(data)
+        companies = "aapl,goog,msft"
+        #if datetime.datetime.now().isoweekday(1, 6):
+        data = get_data(companies)
+        write_to_db(data)
     except:
         return {
         'statusCode': 500,
@@ -76,14 +70,19 @@ def handler():
         'statusCode': 200,
         'body': json.dumps('Hello from Lambda!')
     }
-weekayday() in range ()1, 6):   
+#weekayday() in range ()1, 6):   
 
 
 
 if __name__ == "__main__":
     load_dotenv()
-    schedule.every().day.at("9:00").do(handler)
-    if(t)
-    while True:
-        schedule.run_pending()
-        time.sleep(1)
+    #schedule.every().day.at("9:00").do(handler)
+    handler()
+    
+    #while True:
+     #   now = datetime.now()
+      #  current_time = now.strftime("%H:%M:%S")
+       # if(current_time == "16:00:00"):
+        #    schedule.cancel_job()
+        #schedule.run_pending()
+        #time.sleep(1)
