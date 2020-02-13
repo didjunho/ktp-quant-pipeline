@@ -6,28 +6,22 @@ from dotenv import load_dotenv
 import os
 import schedule
 from datetime import datetime
+import yfinance as yf
+
 class APIFailureException(Exception):
     pass
 
 
 def get_data(company_list):
-   # for c inc 
-    #API_KEY = os.getenv("API_KEY")
-    API_KEY = "pk_4418eb83aa1444959a82a1303e9ce418"
-    current = -1
-    responses = []
-    #for c in company_list:
-        #current = (current + 1) % len(API_KEYS)
-
-    get_request = "https://cloud.iexapis.com/v1/stock/market/batch/latestprice?symbols={0}&types=quote,chart&token={1}"
-    response = requests.get(get_request.format(API_KEY, c))
-
-    if response.status_code != 200:
-        raise APIFailureException("Something went wrong")
-
-    print(response.json())
-    #responses.append(response.json())
-    return response
+    data = {}
+    for c in company_list:
+        info = yf.Ticker(c).info
+        # print(c)
+        # print(info['ask'])
+        # print(info['volume'])
+        data[c] = (info['ask'], info['volume'])
+    print(data)
+    return data
 
 
 
@@ -40,31 +34,33 @@ def write_to_db(data):
     """
 
     # add to DB bois
+    # open the door to the glorious DB
     conn_string = "host="+ os.getenv("PG_HOST") + " port=" + os.getenv("PG_PORT") + " dbname=" + os.getenv("PG_DB") + " user=" + os.getenv("PG_USER") + " password="+ os.getenv("PG_PASS")
     conn = psycopg2.connect(conn_string)
     print("Connected!")
-
-    stocks = data['Stock Quotes']
-    for stock in stocks: 
-        ticker = stock['symbol']
-        price = float(stock['latestPrice '])
-        timestamp = stock['latestUpdate']
-        query = """INSERT INTO stocks (ticker, price, timestamp) VALUES (\'{0}\', \'{1}\', \'{2}\')""".format(ticker, price, timestamp)
+    #this needs to be updated with the new api 
+    for key, value in data.items():
+        #value = { price, volume }
+        price = value[0]
+        volume = value[1]
+        print(key, price)
+        query = """INSERT INTO stocks (ticker, timestamp, price, volume) VALUES (\'{0}\', \'{1}\', \'{2}\', \'{3}\')""".format(key, datetime.now(), price, volume)
+        #send to DB through the aforementioned opened door
         conn.cursor().execute(query)
         conn.commit()
 
 def handler():
     try:
         #load_dotenv()
-        companies = "aapl,goog,msft"
-        #if datetime.datetime.now().isoweekday(1, 6):
+        companies = ['AAPL', 'GOOG', 'MSFT']
         data = get_data(companies)
         write_to_db(data)
-    except:
-        return {
-        'statusCode': 500,
-        'body': json.dumps('Something went wrong :()')
-        }
+    except Exception as e:
+        # return {
+        # 'statusCode': 500,
+        # 'body': json.dumps('Something went wrong :()')
+        # }
+        print(e)
        
     return {
         'statusCode': 200,
@@ -76,13 +72,4 @@ def handler():
 
 if __name__ == "__main__":
     load_dotenv()
-    #schedule.every().day.at("9:00").do(handler)
-    handler()
-    
-    #while True:
-     #   now = datetime.now()
-      #  current_time = now.strftime("%H:%M:%S")
-       # if(current_time == "16:00:00"):
-        #    schedule.cancel_job()
-        #schedule.run_pending()
-        #time.sleep(1)
+    schedule.every().hour.do(handler)
