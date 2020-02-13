@@ -4,7 +4,7 @@ import requests
 import psycopg2
 from dotenv import load_dotenv
 import os
-import schedule
+# import schedule
 from datetime import datetime
 import yfinance as yf
 
@@ -14,12 +14,13 @@ class APIFailureException(Exception):
 
 def get_data(company_list):
     data = {}
+
     for c in company_list:
-        info = yf.Ticker(c).info
-        # print(c)
-        # print(info['ask'])
-        # print(info['volume'])
-        data[c] = (info['ask'], info['volume'])
+        try:
+            info = yf.Ticker(c).info
+            data[c] = (info['ask'], info['volume'])
+        except:
+            print('ticker failed: ', c)
     print(data)
     return data
 
@@ -51,8 +52,10 @@ def write_to_db(data):
 
 def handler():
     try:
-        #load_dotenv()
-        companies = ['AAPL', 'GOOG', 'MSFT']
+        filename = 'companies.txt'
+        companies = []
+        with open(filename) as file:
+            companies = [line.rstrip('\n') for line in file]
         data = get_data(companies)
         write_to_db(data)
     except Exception as e:
@@ -62,14 +65,15 @@ def handler():
         # }
         print(e)
        
-    return {
-        'statusCode': 200,
-        'body': json.dumps('Hello from Lambda!')
-    }
+    # return {
+    #     'statusCode': 200,
+    #     'body': json.dumps('Hello from Lambda!')
+    # }
 #weekayday() in range ()1, 6):   
 
 
 
 if __name__ == "__main__":
     load_dotenv()
-    schedule.every().hour.do(handler)
+    # schedule.every().hour.do(handler)
+    handler()
