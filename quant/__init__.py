@@ -13,8 +13,8 @@ app.config.from_envvar("QUANT_SETTINGS", silent=True)
 # circular import, which is naughty, but Flask was designed that way.
 # (Reference http://flask.pocoo.org/docs/patterns/packages/)  We're
 # going to tell pylint and pycodestyle to ignore this coding style violation.
-import quant.api	 # noqa: E402 pylint: disable=wrong-import-position
-import quant.api.model
+import quant	 # noqa: E402 pylint: disable=wrong-import-position
+import quant.model
 
 # initialize extension
 from flask_cognito import CognitoAuth

@@ -1,10 +1,14 @@
 """Insta485 development configuration."""
 
+#not sure how to use env var but probably it
+from dotenv import load_dotenv
+
 import os
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 
-DATABASE_URI = "postgres://ktp:ktpiscool1!@stonks.c2kcelme0thw.us-east-1.rds.amazonaws.com:5432/stonks"
+#put this in a env file probably
+#i put it in an env file probably
 
 COGNITO_REGION = 'us-east-1'
 COGNITO_USERPOOL_ID = 'us-east-1_2KCYSyxTd'
@@ -20,7 +24,7 @@ class Config(object):
     TESTING = False
     CSRF_ENABLED = True
     SECRET_KEY = 'mike-is-coder-boi'
-    SQLALCHEMY_DATABASE_URI = DATABASE_URI
+    SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URI")
 
 
 class ProductionConfig(Config):
